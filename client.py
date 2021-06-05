@@ -8,6 +8,8 @@ class Client(object):
 			comp_const: computation constraint of client
 		'''
 		self.comp_const = comp_const
+		self.dW = 0
+		self.db = 0
 
 	def update(self, data, current_weight, deadline_time):
 		gradient, run_time = self.compute_gradient(data, current_weight)
@@ -18,20 +20,30 @@ class Client(object):
 
 	def _differentiate(self, X, y, W, b):
 		h = np.dot(X, W) + b
-		dW = np.dot(X.T, (h - y))
-		db = np.sum(h-y)
-		return dW, db
+		self.dW += np.dot(X.T, (h - y))
+		self.db += np.sum(h-y)
 
 	def compute_gradient(self, data, current_weight):
+		start_time = time.time()
+
 		X, y = data
 		W, b = current_weight
 
+		self.dW, self.db = 0, 0
 		if X.shape[0] > self.comp_const:
-			dW, db = 0, 0
-			
-		start_time = time.time()
-		
+			t = 0
+			while t < X.shape[0]:
+				batch_X, batch_y = X[t:t + self.comp_const], y[t:t + self.comp_const]
+				self._differentiate(batch_X, batch_y, W, b)
+				t += self.comp_const
+			if X.shape[0] % self.comp_const:
+				batch_X, batch_y = X[t:], y[t:]
+				self._differentiate(batch_X, batch_y, W, b)
+
+		else:
+			self._differentiate(X, y, W, b)
+
 		run_time = time.time() - start_time
 
-		return [dW, db], run_time
+		return [self.dW, self.db], run_time
 
