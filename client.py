@@ -13,9 +13,6 @@ class Client(object):
 
 	def update(self, data, current_weight, deadline_time):
 		gradient, run_time = self.compute_gradient(data, current_weight)
-
-		if run_time > deadline_time:
-			return 0
 		return gradient, run_time
 
 	def _differentiate(self, X, y, W, b):
